@@ -1,0 +1,152 @@
+<ion-content [fullscreen]="true">
+  <section class="hero">
+    <div class="hero-top">
+      <div class="greeting">
+        <span class="greeting-label">{{ greeting() }},</span>
+        <strong class="greeting-name">{{ name() }}</strong>
+      </div>
+      <div class="hero-actions">
+        <ion-button id="bell-trigger" fill="clear" size="small" class="bell" aria-label="Notifications">
+          <ion-icon slot="icon-only" name="notifications-outline"></ion-icon>
+          @if (unreadCount() > 0) {
+            <span class="bell-dot" aria-hidden="true"></span>
+          }
+        </ion-button>
+        <button id="avatar-trigger" type="button" class="avatar" aria-label="Account menu">{{ initial() }}</button>
+      </div>
+    </div>
+
+    <div class="cta">
+      <div class="cta-row">
+        <div class="cta-copy">
+          @if (bookingsLeft() > 0) {
+            <h2>Something broken?</h2>
+            <p>Tell us what's wrong and pick a time. It takes about a minute.</p>
+          } @else {
+            <h2>You're all booked</h2>
+            <p>You have {{ maxActive }} active repairs. You can book again when one is done.</p>
+          }
+        </div>
+        <img class="cta-art" src="assets/icons/service-repair.png" alt="" />
+      </div>
+      @if (bookingsLeft() > 0) {
+        <ion-button class="cta-btn" (click)="goToNewBooking()">
+          <ion-icon slot="start" name="add-outline"></ion-icon>
+          Book a repair
+        </ion-button>
+      } @else {
+        <ion-button class="cta-btn calm" (click)="goToMyRepairs()">
+          <ion-icon slot="start" name="hourglass-outline"></ion-icon>
+          See my repairs
+        </ion-button>
+      }
+    </div>
+  </section>
+
+  <ion-popover
+    trigger="bell-trigger"
+    triggerAction="click"
+    class="menu-popover"
+    (didDismiss)="markAllRead()"
+  >
+    <ng-template>
+      <ion-list lines="none">
+        @for (item of notifications(); track item.id) {
+          <ion-item button detail="false" routerLink="/tabs/my-repairs">
+            <ion-icon slot="start" name="construct-outline" [color]="item.read ? 'medium' : 'primary'"></ion-icon>
+            <ion-label class="ion-text-wrap">
+              <h3>Repair update</h3>
+              <p>{{ item.message }}</p>
+            </ion-label>
+          </ion-item>
+        } @empty {
+          <ion-item detail="false">
+            <ion-icon slot="start" name="notifications-outline"></ion-icon>
+            <ion-label>No new notifications</ion-label>
+          </ion-item>
+        }
+      </ion-list>
+    </ng-template>
+  </ion-popover>
+
+  <ion-popover trigger="avatar-trigger" triggerAction="click" class="menu-popover" #accountMenu>
+    <ng-template>
+      <ion-list lines="none">
+        <ion-item button detail="false" (click)="toggleTheme()">
+          <ion-icon slot="start" [name]="themeMode() === 'dark' ? 'sunny-outline' : 'moon-outline'"></ion-icon>
+          <ion-label>{{ themeMode() === 'dark' ? 'Light mode' : 'Dark mode' }}</ion-label>
+        </ion-item>
+        <ion-item button detail="false" (click)="accountMenu.dismiss(); signOut()">
+          <ion-icon slot="start" name="log-out-outline"></ion-icon>
+          <ion-label>Sign out</ion-label>
+        </ion-item>
+      </ion-list>
+    </ng-template>
+  </ion-popover>
+
+  <div class="body">
+    @if (error(); as message) {
+      <div class="error-box" role="alert">
+        <p>{{ message }}</p>
+        <ion-button fill="outline" size="small" (click)="retry()">
+          <ion-icon slot="start" name="refresh-outline"></ion-icon>
+          Retry
+        </ion-button>
+      </div>
+    }
+
+    @if (bookingsLeft() > 0) {
+      <div class="section-head">
+        <h3>Quick book</h3>
+        <span class="section-hint">What's wrong?</span>
+      </div>
+      <div class="quick">
+        @for (issue of issues; track issue.key; let i = $index) {
+          <button
+            type="button"
+            class="quick-tile"
+            [attr.data-tone]="issue.tone"
+            [style.--i]="i"
+            (click)="bookFor(issue.key)"
+          >
+            <span class="quick-icon"><ion-icon [name]="issue.icon"></ion-icon></span>
+            <span class="quick-label">{{ issue.label }}</span>
+          </button>
+        }
+      </div>
+    }
+
+    <div class="section-head">
+      <h3>Active repairs</h3>
+      @if (active().length > 0) {
+        <span class="count">{{ active().length }}</span>
+      }
+    </div>
+
+    @if (loading() && active().length === 0) {
+      <div class="center">
+        <ion-spinner name="crescent"></ion-spinner>
+      </div>
+    } @else if (active().length === 0) {
+      <div class="empty-state">
+        <ion-icon name="checkmark-done-outline"></ion-icon>
+        <p>No repairs in progress. When you book one, you can follow it here.</p>
+      </div>
+    } @else {
+      @for (repair of shownActive(); track repair.id; let i = $index) {
+        <app-repair-card class="rise" [style.--i]="i" [repair]="repair"></app-repair-card>
+      }
+    }
+
+    @if (repairs().length > 0) {
+      <ion-button class="all-link" expand="block" fill="clear" (click)="goToMyRepairs()">
+        @if (active().length > shownActive().length) {
+          See all {{ active().length }} active repairs
+        } @else {
+          See all repairs and history
+        }
+        <ion-icon slot="end" name="chevron-forward-outline"></ion-icon>
+      </ion-button>
+    }
+  </div>
+</ion-content>
